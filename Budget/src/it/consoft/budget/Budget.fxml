@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
@@ -15,8 +16,9 @@
    <children>
       <TableView fx:id="tabellaTotali" layoutX="86.0" layoutY="134.0" prefHeight="200.0" prefWidth="570.0" AnchorPane.bottomAnchor="100.0" AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="50.0" AnchorPane.topAnchor="150.0">
         <columns>
+            <TableColumn fx:id="colonnaDipartimento" prefWidth="114.0" text="Dipartimento" />
           <TableColumn fx:id="colonnaCodiceCosto" prefWidth="114.0" sortType="DESCENDING" text="Codice Conto" />
-          <TableColumn fx:id="colonnaDescrizione" prefWidth="114.0" text="Descrizione" />
+          <TableColumn fx:id="colonnaCommessa" prefWidth="114.0" text="Commessa" />
             <TableColumn fx:id="colonnaActual" prefWidth="114.0" text="Actual" />
             <TableColumn fx:id="colonnaBudget" prefWidth="114.0" text="Budget" />
             <TableColumn fx:id="colonnaDelta" prefWidth="114.0" text="Delta" />
@@ -36,6 +38,11 @@
             <Image url="@../../../../../../../Desktop/tir/Excel-icon.png" />
          </image>
       </ImageView>
-      <TextField fx:id="testoFiltro" layoutX="500.0" layoutY="90.0" promptText="cerca" AnchorPane.leftAnchor="550.0" />
+      <TextField fx:id="testoFiltro" layoutX="500.0" layoutY="90.0" promptText="cerca" AnchorPane.leftAnchor="740.0" AnchorPane.topAnchor="90.0" />
+      <ComboBox fx:id="comboDipartimento" layoutX="492.0" layoutY="90.0" prefWidth="150.0" promptText="Seleziona Dipartimento" AnchorPane.leftAnchor="550.0" AnchorPane.topAnchor="90.0" />
+      <Label layoutX="86.0" layoutY="67.0" text="Data Inizio" AnchorPane.leftAnchor="50.0" AnchorPane.topAnchor="75.0" />
+      <Label layoutX="257.0" layoutY="67.0" text="Data Fine" AnchorPane.leftAnchor="250.0" AnchorPane.topAnchor="75.0" />
+      <Label fx:id="labelDipartimento" layoutX="550.0" layoutY="67.0" text="Seleziona Dipartimento" AnchorPane.leftAnchor="550.0" AnchorPane.topAnchor="75.0" />
+      <Label fx:id="labelFiltroConto" layoutX="740.0" layoutY="67.0" text="Filtra per Conto" AnchorPane.leftAnchor="740.0" AnchorPane.topAnchor="75.0" />
    </children>
 </AnchorPane>

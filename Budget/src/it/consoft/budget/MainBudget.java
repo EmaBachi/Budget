@@ -26,7 +26,6 @@ public class MainBudget extends Application {
 			Model model = new Model();
 			controller.setModel(model);
 			controller.setStage(primaryStage);
-			controller.impostazioniTabella();
 			
 			Dimension dim = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -34,6 +33,7 @@ public class MainBudget extends Application {
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);
 			primaryStage.setTitle("BUDGET");
+			controller.impostazioniTabella();
 			primaryStage.show();
 			
 			//controllo se nel databse è presenta la tabella di budget. Se non è presente obbligo l'utente a selezionare un file di budget

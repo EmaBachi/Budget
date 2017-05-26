@@ -3,7 +3,6 @@ package it.consoft.budget.model;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,15 +12,11 @@ public class Model {
 	
 	private BudgetDAO dao;
 	
-	double fattore;
-	
-	private Map<String, CostoBudget> mappaCosti;
+	private Map<CostoBudget, CostoBudget> mappaCosti;
 	
 	public Model(){
 		this.dao = new BudgetDAO();
-		this.mappaCosti = new ConcurrentHashMap<String, CostoBudget>();
-		
-		fattore = 1.0;
+		this.mappaCosti = new ConcurrentHashMap<CostoBudget, CostoBudget>();
 	}
 	
 	public int contaCostiBudget(){
@@ -37,7 +32,7 @@ public class Model {
 		Collection<CostoBudget> collezioneCosti = dao.caricaCostiBudget();
 		
 		for(CostoBudget temp : collezioneCosti)
-			mappaCosti.put(temp.getCodiceCosto(), temp);
+			mappaCosti.put(temp, temp);
 		
 		return true;
 	}
@@ -51,27 +46,59 @@ public class Model {
 		Timestamp dataInizio = this.convertitoreData(dataInizioLocal);
 		Timestamp dataFine = this.convertitoreData(dataFineLocal);
 		
-		Collection<CostoBudget> collezioneCosti = dao.caricaCostiActual(dataInizio, dataFine);
+		impostaImportoBudget(dataInizioLocal, dataFineLocal);
+		//============ IL CODICE QUI SOTTO FUNZIONA ALLA PERFZIONE=======================
+		//Collection<CostoBudget> collezioneCosti = dao.caricaCostiActual(dataInizio, dataFine);
 		
 		//Con questo ciclo associo gli importi actual agli importi previsti nel budget. effettuo il controllo sul codice identificativo per sicurezza
-		for(CostoBudget temp : collezioneCosti){
-			if(mappaCosti.get(temp.getCodiceCosto())!= null){
-				mappaCosti.get(temp.getCodiceCosto()).setImportoActual(temp.getImportoActual());
+		/*for(CostoBudget temp : collezioneCosti){
+			if(mappaCosti.get(temp)!= null){
+				mappaCosti.get(temp).setImportoActual(temp.getImportoActual());
 			}
 			else
-				mappaCosti.put(temp.getCodiceCosto(), temp);
+				mappaCosti.put(temp, temp);
+		}*/
+		//================================================================================
+		
+		for(CostoBudget costoBudget : mappaCosti.values()){
+			if(!costoBudget.getCodiceCosto().equals("E20073115"))
+				costoBudget.setImportoActual(dao.getImporto(costoBudget.getCodiceCosto(),
+															costoBudget.getCodiceCommessa(),
+															dataInizio,
+															dataFine));
+			 else 
+				costoBudget.setImportoActual(dao.getImportoPersonale(costoBudget.getCodiceCommessa(),
+																	dataInizio,
+																	dataFine));
 		}
 		
-		this.moltiplicaCostiBudget(dataInizioLocal, dataFineLocal);
+		
+		
+		impostaDelta();
 	}
 	
-	private void moltiplicaCostiBudget(LocalDate dataInizioLocal, LocalDate dataFineLocal){
+	private void impostaDelta() {
 		
-		this.setFattore((double)(dataFineLocal.getMonthValue()-dataInizioLocal.getMonthValue()+1));
+		for(CostoBudget costoBudget : mappaCosti.values())
+			costoBudget.setDelta();
 		
-		for(CostoBudget temp : mappaCosti.values()){
-			mappaCosti.get(temp.getCodiceCosto()).moltiplicaImportoBudget(this.fattore);
-			mappaCosti.get(temp.getCodiceCosto()).calcolaDelta();
+	}
+
+	private void impostaImportoBudget(LocalDate dataInizioLocal, LocalDate dataFineLocal){
+		
+		int meseInizio = dataInizioLocal.getMonthValue();
+		int meseFine = dataFineLocal.getMonthValue();
+		
+		for(CostoBudget costo : mappaCosti.values()){
+			double somma = 0.0;
+			
+			if(costo.getImportiBudget() != null){
+				
+				for(int i = meseInizio-2; i<=meseFine-2; i++)
+					somma += costo.getImportiBudget().get(i);
+				
+			costo.setImportoBudget(somma);
+			}
 		}
 	}
 	
@@ -85,32 +112,21 @@ public class Model {
 		return ritorno;
 	}
 	
-	private void setFattore(double fattore){
-		this.fattore = fattore;
-	}
-	
 	//metodo per ottenere i i valori contenuti nella mappa
 	public Collection<CostoBudget> getCollezioneCosti(){
 		return mappaCosti.values();
 	}
-	
-	/**
-	 * Questo metodo è necessario per pulire la struttura dati.
-	 * Se il costo considerato non presenta un importo di budget, allora lo rimuovo dalla struttura dati;
-	 * altrimenti azzero il suo importo di actual e menisilizzo nuovamente l'importo di budget
-	 */
-	public void pulisci(){
-		Iterator<CostoBudget> it = mappaCosti.values().iterator();
+
+	/*public void pulisci(){
 		
-		while(it.hasNext()){
-			CostoBudget temp = it.next();
-			mappaCosti.get(temp.getCodiceCosto()).setImportoActual(0.0);
-			mappaCosti.get(temp.getCodiceCosto()).moltiplicaImportoBudget((double)1.0/this.fattore);
-			System.out.println(mappaCosti.get(temp.getCodiceCosto()));
-		}
+			Iterator<CostoBudget> it = mappaCosti.values().iterator();
+			
+			while(it.hasNext()){
+				CostoBudget temp = it.next();
+				mappaCosti.get(temp).setImportoActual(0.0);
+			}
 		
-		this.setFattore(1.0);
-	}
+	}*/
 
 	/**
 	 * Il metodo si occupa di demandare il dao per cambiare il file di budget selezionato.
@@ -131,6 +147,5 @@ public class Model {
 	 */
 	private void pulisciTutto(){
 		mappaCosti.clear();
-		this.setFattore(1.0);
 	}
 }

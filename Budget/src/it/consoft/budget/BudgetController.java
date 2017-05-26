@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URL;
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -25,10 +27,10 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.input.Clipboard;
@@ -39,6 +41,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.image.ImageView;
 
@@ -53,8 +56,6 @@ public class BudgetController {
 	final FileChooser fileChooser = new FileChooser();
 	
 	ObservableList<CostoBudget> obsCosti = FXCollections.observableArrayList();
-	
-	private boolean primaVisualizzazione = true;
 	
 	public void setModel(Model model){
 		this.model = model;
@@ -77,7 +78,7 @@ public class BudgetController {
     private TableColumn<CostoBudget, String> colonnaCodiceCosto;
 
     @FXML
-    private TableColumn<CostoBudget, String> colonnaDescrizione;
+    private TableColumn<CostoBudget, String> colonnaCommessa;
 
     @FXML
     private TableColumn<CostoBudget, String> colonnaActual;
@@ -87,6 +88,12 @@ public class BudgetController {
 
     @FXML
     private TableColumn<CostoBudget, String> colonnaDelta;
+    
+    /*@FXML
+    private TableColumn<CostoBudget, String> colonnaDescrizione;*/
+    
+    @FXML
+    private TableColumn<CostoBudget, String> colonnaDipartimento;
     
     @FXML
     private DatePicker datePickerInizio;
@@ -109,6 +116,16 @@ public class BudgetController {
     @FXML
     private TextField testoFiltro;
     
+    @FXML
+    private ComboBox<String> comboDipartimento;
+    
+    @FXML
+    private Label labelDipartimento;
+
+    @FXML
+    private Label labelFiltroConto;
+
+    
     /**
      * Il metodo viene invocato quando l'utente preme il bottono controlla.
      * Per prima cosa si effettuano alcuni controlli sulle date immesse dall'utente.
@@ -128,29 +145,35 @@ public class BudgetController {
     	LocalDate dataInizio = datePickerInizio.getValue();
     	LocalDate dataFine = datePickerFine.getValue();
     	
-    	if(dataInizio == null || dataFine == null || dataFine.isBefore(dataInizio)){
+    	if(dataInizio == null || 
+    			dataFine == null || 
+    			dataFine.isBefore(dataInizio) || 
+    			dataInizio.getMonthValue() < 2
+    			){
+    		
     		inputValido = false;
     		//messaggio di errore
     		Alert alert = new Alert(AlertType.ERROR);
     		alert.setTitle("Errore");
     		alert.setHeaderText("Errore Data");
-    		alert.setContentText("La data di fine controllo precede la data di inizio controllo");
+    		alert.setContentText("Cosa è successo?\n"
+    				+ "1)La data di fine controllo precede la data di inizio controllo;\n"
+    				+ "2)Il mese di fine controllo precede Febbraio.");
 
     		alert.showAndWait();
     	}
     	
-    	if(primaVisualizzazione)
-    		primaVisualizzazione = false;
-    	else{
-    		model.pulisci();
-    	}
-    	
     	if(inputValido){
     		obsCosti.clear();
+    		
     		model.caricaCostiActual(dataInizio, dataFine);
+    		
     		obsCosti.addAll(model.getCollezioneCosti());
-    		testoFiltro.setDisable(false);
-    		//tabellaTotali.setItems(obsCosti);
+    		testoFiltro.setVisible(true);
+    		imageExcel.setVisible(true);
+    		comboDipartimento.setVisible(true);
+    		labelDipartimento.setVisible(true);
+    		labelFiltroConto.setVisible(true);
     	}
     }
     
@@ -171,11 +194,13 @@ public class BudgetController {
         	if(model.leggiFileBudget(file.getAbsolutePath())){
         		this.bottoneControlla.setDisable(false);
         		model.caricaCostiBudget();
-        		Alert alert = new Alert(AlertType.CONFIRMATION);
+        		Alert alert = new Alert(AlertType.INFORMATION);
         		alert.setTitle("File cambiato");
         		alert.setHeaderText("File cambiato con successo. Selezionare le date e premere Controlla per caricare i nuovi dati.");
         		
         		alert.showAndWait();
+        		
+        		obsCosti.clear();
         	} else 
         		this.bottoneControlla.setDisable(true);
         }
@@ -273,16 +298,23 @@ public class BudgetController {
     		alert.showAndWait();
         }
     }
-
+    
     
     //metodo per definire le impostazioni delle table column
     public void impostazioniTabella(){
     	
-    	colonnaCodiceCosto.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(5));
-    	colonnaDescrizione.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(5));
-    	colonnaActual.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(5));
-    	colonnaBudget.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(5));
-    	colonnaDelta.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(5));
+    	colonnaDipartimento.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(6));
+    	colonnaCodiceCosto.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(6));
+    	colonnaCommessa.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(6));
+    	colonnaActual.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(6));
+    	colonnaBudget.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(6));
+    	colonnaDelta.prefWidthProperty().bind(tabellaTotali.widthProperty().divide(6));
+    	
+    	colonnaDipartimento.setCellValueFactory(new Callback<CellDataFeatures<CostoBudget, String>, ObservableValue<String>>() {
+		     public ObservableValue<String> call(CellDataFeatures<CostoBudget, String> p) {
+		         return new ReadOnlyObjectWrapper<String>(p.getValue().getDipartimento());
+		     }
+		  });
     	
     	colonnaCodiceCosto.setCellValueFactory(new Callback<CellDataFeatures<CostoBudget, String>, ObservableValue<String>>() {
 		     public ObservableValue<String> call(CellDataFeatures<CostoBudget, String> p) {
@@ -290,9 +322,9 @@ public class BudgetController {
 		     }
 		  });
     	
-    	colonnaDescrizione.setCellValueFactory(new Callback<CellDataFeatures<CostoBudget, String>, ObservableValue<String>>() {
+    	colonnaCommessa.setCellValueFactory(new Callback<CellDataFeatures<CostoBudget, String>, ObservableValue<String>>() {
 		     public ObservableValue<String> call(CellDataFeatures<CostoBudget, String> p) {
-		         return new ReadOnlyObjectWrapper<String>(p.getValue().getDescrizione());
+		         return new ReadOnlyObjectWrapper<String>(p.getValue().getCodiceCommessa());
 		     }
 		  });
     	
@@ -372,26 +404,60 @@ public class BudgetController {
             });
         });
     	
+    	testoFiltro.setVisible(false);
+    	imageExcel.setVisible(false);
+    	labelDipartimento.setVisible(false);
+    	labelFiltroConto.setVisible(false);
+    	
+    	List<String> dipartimenti = new ArrayList<String>(Arrays.asList("COMPLESSIVO", "Progetti Speciali", "Ente centrale", "Amministrazione"));
+    	comboDipartimento.getItems().addAll(dipartimenti);
+    	
+    	comboDipartimento.getSelectionModel().select("COMPLESSIVO");
+    	comboDipartimento.setVisible(false);
+    	
+    	comboDipartimento.valueProperty().addListener((observable, oldValue, newValue) -> {
+    		listaFiltro.setPredicate(costo -> {
+    			if(newValue == null || newValue.isEmpty() || newValue.equals("COMPLESSIVO"))  return true;
+    			
+    			if(newValue.equals("Amministrazione")){
+    				if(costo.getCodiceCommessa().equals("I08_DA01")) return true;
+    			}
+    			
+    			if(newValue.equals("Progetti Speciali")){
+    				if(costo.getCodiceCommessa().equals("I17_DPS01")) return true;
+    			}
+    			
+    			if(newValue.equals("Ente centrale")){
+    				if(costo.getCodiceCommessa().equals("I17_CI01")) return true;
+    			}
+    			
+    			return false;
+    		});
+    	});
+    	
     	SortedList<CostoBudget> listaOrdinata = new SortedList<>(listaFiltro);
     	listaOrdinata.comparatorProperty().bind(tabellaTotali.comparatorProperty());
     	tabellaTotali.setItems(listaOrdinata);
-    	
-    	testoFiltro.setDisable(true);
     }
     
 
     @FXML
     void initialize() {
-        assert tabellaTotali != null : "fx:id=\"tabellaTotali\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert colonnaCodiceCosto != null : "fx:id=\"colonnaCodiceCosto\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert colonnaDescrizione != null : "fx:id=\"colonnaDescrizione\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert colonnaActual != null : "fx:id=\"colonnaActual\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert colonnaBudget != null : "fx:id=\"colonnaBudget\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert colonnaDelta != null : "fx:id=\"colonnaDelta\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert bottoneSelezionaFile != null : "fx:id=\"bottoneSelezionaFile\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert datePickerInizio != null : "fx:id=\"datePickerInizio\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert datePickerFine != null : "fx:id=\"datePicketFine\" was not injected: check your FXML file 'Budget.fxml'.";
-        assert bottoneControlla != null : "fx:id=\"bottoneControlla\" was not injected: check your FXML file 'Budget.fxml'.";
+    	 assert tabellaTotali != null : "fx:id=\"tabellaTotali\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert colonnaDipartimento != null : "fx:id=\"colonnaDipartimento\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert colonnaCodiceCosto != null : "fx:id=\"colonnaCodiceCosto\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert colonnaCommessa != null : "fx:id=\"colonnaCommessa\" was not injected: check your FXML file 'Budget.fxml'.";
+         //assert colonnaDescrizione != null : "fx:id=\"colonnaDescrizione\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert colonnaActual != null : "fx:id=\"colonnaActual\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert colonnaBudget != null : "fx:id=\"colonnaBudget\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert colonnaDelta != null : "fx:id=\"colonnaDelta\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert bottoneSelezionaFile != null : "fx:id=\"bottoneSelezionaFile\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert datePickerInizio != null : "fx:id=\"datePickerInizio\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert datePickerFine != null : "fx:id=\"datePickerFine\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert bottoneControlla != null : "fx:id=\"bottoneControlla\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert testoCopia != null : "fx:id=\"testoCopia\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert imageExcel != null : "fx:id=\"imageExcel\" was not injected: check your FXML file 'Budget.fxml'.";
+         assert testoFiltro != null : "fx:id=\"testoFiltro\" was not injected: check your FXML file 'Budget.fxml'.";
         
         testoCopia.setVisible(false);
     }
